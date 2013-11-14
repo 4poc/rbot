@@ -126,6 +126,9 @@ module Irc
     # User/Channel message was sent to
     attr_reader :target
 
+    # The MessageTemplate this message matched against 
+    attr_accessor :template
+
     # contents of the message (stripped of initial/final format codes)
     attr_accessor :message
 

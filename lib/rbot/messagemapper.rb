@@ -195,6 +195,10 @@ class Bot
     # threaded::
     #   a boolean (defaults to false) that determines whether the action should be
     #   called in a separate thread.
+    # fiber::
+    #   a boolean (defaults to false) that determines whether the action should be
+    #   called in a new fiber, necessary in order to allow the action to call
+    #   wait_for.
     #
     #
     # Further examples:
@@ -233,6 +237,16 @@ class Bot
       @templates.last
     end
 
+    # Whether the template has been registered before by #map.
+    def has_template?(template)
+      @templates.any? {|tmpl| tmpl.template == template}
+    end
+
+    # Removes a template from the handler.
+    def remove_template!(template)
+      @templates.delete(template)
+    end
+
     # _m_::  derived from BasicUserMessage
     #
     # Examine the message _m_, comparing it with each map()'d template to
@@ -249,6 +263,10 @@ class Bot
         if options.kind_of? Failure
           failures << options
         else
+          # store the template this message was matched against, so you 
+          # can have one action for multiple commands and still 
+          # properly differentiate
+          m.template = tmpl
           action = tmpl.options[:action]
           unless @parent.respond_to?(action)
             failures << NoActionFailure.new(tmpl, m)
@@ -274,7 +292,15 @@ class Bot
                 end
               end
             else
-              @parent.send(action, m, options)
+              fiber_plugin = @parent.bot.plugins['fiber']
+              if tmpl.options[:fiber] and fiber_plugin
+                debug 'handle command in new fiber'
+                fiber_plugin.new_fiber do
+                  @parent.send(action, m, options)
+                end
+              else
+                @parent.send(action, m, options)
+              end
             end
 
             return true

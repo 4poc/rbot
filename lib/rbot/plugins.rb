@@ -375,6 +375,16 @@ module Plugins
     def datafile(*fname)
       @bot.path dirname, *fname
     end
+
+    # Pauses the action fiber and waits for template before continuing.
+    #
+    # template:: ...
+    # source:: ...
+    # opts:: ...
+    def wait_for(*args)
+      fiber_plugin = @bot.plugins['fiber']
+      fiber_plugin.wait_for(*args) if fiber_plugin
+    end
   end
 
   # A CoreBotModule is a BotModule that provides core functionality.
